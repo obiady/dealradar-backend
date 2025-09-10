@@ -1,0 +1,11 @@
+id,address,suburb,state,postcode,lat,lng,beds,baths,cars,land_m2,building_m2,year_built,dwelling_type,list_price,weekly_rent,cagr5,vacancy,flood_risk,bushfire_risk,crime_band,zoning_code,frontage_m,granny_flat_allowed,dual_occ_allowed,heritage_flag,amenities_score
+1,12 Example St,Gateshead,NSW,2290,-32.973,151.692,3,1,1,610,110,1975,House,720000,580,0.045,1.2,none,low,medium,R2,14,True,True,False,0.72
+2,88 Sample Ave,Argenton,NSW,2284,-32.937,151.628,4,2,2,560,150,1990,House,820000,680,0.038,1.8,low,low,low,R2,12,True,False,False,0.65
+3,5 Test Rd,Wyong,NSW,2259,-33.283,151.42,3,1,1,450,95,1980,House,560000,520,0.052,0.9,low,low,medium,R2,13,True,True,False,0.58
+4,101 Demo Dr,Woy Woy,NSW,2256,-33.492,151.325,2,1,1,320,80,1965,Unit,480000,430,0.041,2.5,none,low,medium,R3,8,False,False,False,0.81
+5,7 Harbour Pde,Rockdale,NSW,2216,-33.952,151.14,3,2,1,600,125,1978,House,980000,900,0.036,2.1,medium,low,high,R2,15,True,True,False,0.84
+6,33 Coastal Way,Redhead,NSW,2290,-33.012,151.73,3,1,1,700,130,1972,House,890000,860,0.047,1.1,medium,low,low,R2,15,True,True,False,0.76
+7,19 Riverbank Ct,Gold Coast,QLD,4211,-27.99,153.33,4,2,2,680,180,2001,House,840000,780,0.055,1.4,medium,low,medium,LR,16,True,True,False,0.79
+8,22 Bushland Rd,Noosa,QLD,4567,-26.4,153.09,3,2,2,520,140,1995,House,910000,950,0.048,1.0,medium,low,low,LR,14,True,True,False,0.82
+9,3 Plains Dr,Adelaide,SA,5000,-34.93,138.6,3,1,1,610,110,1975,House,620000,520,0.032,2.8,low,low,medium,GN,12,True,False,False,0.66
+10,44 Transit Ln,Sunshine Coast,QLD,4551,-26.79,153.12,4,2,2,540,160,2010,House,780000,740,0.051,1.2,none,low,low,LR,13,True,True,False,0.83
