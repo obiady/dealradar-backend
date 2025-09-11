@@ -47,21 +47,43 @@ def list_properties(
     exclude_bushfire_high: bool = True,
     sort_by: str = "deal_score",
     sort_dir: str = "desc",
+    debug: bool = False,
 ):
-    # DATASET is now a list of dicts (from dataset.py)
+    # DATASET is a list of dicts (from dataset.py); keep fallback if someone reverts it
     rows: List[Dict[str, Any]] = DATASET if isinstance(DATASET, list) else DATASET.to_dict(orient="records")
-    rows = compute_analytics_for_all(rows)
-    rows = filters_apply(
-        rows,
-        min_gross_yield=min_gross_yield,
-        min_net_yield=min_net_yield,
-        min_cagr5=min_cagr5,
-        max_vacancy=max_vacancy,
-        exclude_flood_high=exclude_flood_high,
-        exclude_bushfire_high=exclude_bushfire_high,
-    )
-    rows = sort_properties(rows, sort_by=sort_by, sort_dir=sort_dir)
-    return JSONResponse(content=jsonable_encoder(rows[:limit]))
+
+    # Quick debug: show dataset size and first record without running analytics
+    if debug:
+        summary = {
+            "dataset_len": len(rows),
+            "first_row_keys": list(rows[0].keys()) if rows else [],
+            "first_row_sample": rows[0] if rows else None,
+        }
+        return JSONResponse(content=jsonable_encoder(summary))
+
+    try:
+        rows = compute_analytics_for_all(rows)
+        rows = filters_apply(
+            rows,
+            min_gross_yield=min_gross_yield,
+            min_net_yield=min_net_yield,
+            min_cagr5=min_cagr5,
+            max_vacancy=max_vacancy,
+            exclude_flood_high=exclude_flood_high,
+            exclude_bushfire_high=exclude_bushfire_high,
+        )
+        rows = sort_properties(rows, sort_by=sort_by, sort_dir=sort_dir)
+        return JSONResponse(content=jsonable_encoder(rows[:limit]))
+    except Exception as e:
+        # Return error details to the client to avoid blind guessing
+        return JSONResponse(
+            status_code=500,
+            content={
+                "code": "properties_failed",
+                "message": "Failed to compute/serialize properties.",
+                "detail": str(e),
+            },
+        )
 
 @app.get("/property/{pid}")
 def property_by_id(pid: str):
