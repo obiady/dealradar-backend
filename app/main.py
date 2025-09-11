@@ -1,43 +1,36 @@
+from __future__ import annotations
+from typing import List, Dict, Any, Optional
+
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
-import math
-import numpy as np
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse, Response
 
 from .services.dataset import DATASET, get_property_by_id
-from .services.analytics import compute_analytics_for_all, filters_apply, sort_properties
+from .services.analytics import (
+    compute_analytics_for_all,
+    filters_apply,
+    sort_properties,
+)
 
 app = FastAPI(title="DealRadar AU API", version="0.2.0")
 
-# Allow Next.js dev server
+# Allow local dev & WP/Next front-ends
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=["*"],  # lock down later if you want
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-def _coerce(v):
-    # Convert NumPy scalars to plain Python + scrub NaN/Inf
-    if isinstance(v, (np.integer,)): return int(v)
-    if isinstance(v, (np.floating,)):
-        f = float(v)
-        if math.isnan(f) or math.isinf(f): return None
-        return f
-    if isinstance(v, (np.bool_,)): return bool(v)
-    return v
+@app.get("/")
+def root():
+    return {"status": "ok", "endpoints": ["/health", "/properties", "/property/{id}", "/docs"]}
 
-def _sanitize(rows):
-    out = []
-    for r in rows:
-        nr = {}
-        for k, v in r.items():
-            if isinstance(v, dict):
-                nr[k] = {kk: _coerce(vv) for kk, vv in v.items()}
-            else:
-                nr[k] = _coerce(v)
-        out.append(nr)
-    return out
+@app.head("/health")
+def head_health():
+    return Response(status_code=200)
 
 @app.get("/health")
 def health():
@@ -45,27 +38,35 @@ def health():
 
 @app.get("/properties")
 def list_properties(
-    min_gross_yield: float | None = Query(None),
-    min_net_yield: float | None = Query(None),
-    min_cagr5: float | None = Query(None),
-    max_vacancy: float | None = Query(None),
-    exclude_flood_high: bool = Query(True),
-    exclude_bushfire_high: bool = Query(True),
-    sort_by: str = Query("deal_score"),
-    sort_dir: str = Query("desc"),
+    limit: int = Query(50, ge=1, le=500),
+    min_gross_yield: Optional[float] = None,
+    min_net_yield: Optional[float] = None,
+    min_cagr5: Optional[float] = None,
+    max_vacancy: Optional[float] = None,
+    exclude_flood_high: bool = True,
+    exclude_bushfire_high: bool = True,
+    sort_by: str = "deal_score",
+    sort_dir: str = "desc",
 ):
-    rows = DATASET.to_dict(orient="records")
+    # DATASET is now a list of dicts (from dataset.py)
+    rows: List[Dict[str, Any]] = DATASET if isinstance(DATASET, list) else DATASET.to_dict(orient="records")
     rows = compute_analytics_for_all(rows)
-    rows = filters_apply(rows, min_gross_yield, min_net_yield, min_cagr5, max_vacancy, exclude_flood_high, exclude_bushfire_high)
-    rows = sort_properties(rows, sort_by, sort_dir)
-    rows = _sanitize(rows)
-    return {"count": len(rows), "items": rows}
+    rows = filters_apply(
+        rows,
+        min_gross_yield=min_gross_yield,
+        min_net_yield=min_net_yield,
+        min_cagr5=min_cagr5,
+        max_vacancy=max_vacancy,
+        exclude_flood_high=exclude_flood_high,
+        exclude_bushfire_high=exclude_bushfire_high,
+    )
+    rows = sort_properties(rows, sort_by=sort_by, sort_dir=sort_dir)
+    return JSONResponse(content=jsonable_encoder(rows[:limit]))
 
-@app.get("/properties/{pid}")
-def get_property(pid: str):
-    r = get_property_by_id(pid)
-    if not r:
-        return {}
-    r = compute_analytics_for_all([r])[0]
-    r = _sanitize([r])[0]
-    return r
+@app.get("/property/{pid}")
+def property_by_id(pid: str):
+    row = get_property_by_id(pid)
+    if not row:
+        return JSONResponse(status_code=404, content={"error": "not found"})
+    row = compute_analytics_for_all([row])[0]
+    return JSONResponse(content=jsonable_encoder(row))
